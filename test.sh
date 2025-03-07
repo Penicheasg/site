@@ -8,11 +8,13 @@
 
         for NET in "192.168.$VLAN.0/24" "10.$VLAN.0.0/16" "172.16.$VLAN.0/24"; do
             echo "[*] Escaneando hosts ativos na rede $NET..."
-            sudo nmap -sn -e "$IFACE.$VLAN" "$NET" 2>/dev/null | awk '/Nmap scan report/{print $5}'
+            { sudo nmap -sn -e "$IFACE.$VLAN" "$NET" 2>/dev/null || sudo nmap -sn -Pn -e "$IFACE.$VLAN" "$NET" 2>/dev/null; } |
+            awk '/Nmap scan report/{print $5}'
         done |
         while read IP; do
+            [ -z "$IP" ] && continue
             echo "[+] Host encontrado: $IP - Verificando portas abertas..."
-            sudo nmap -sS --top-ports 50 -T2 -e "$IFACE.$VLAN" "$IP" 2>/dev/null
+            sudo nmap -sS --top-ports 50 -T2 -e "$IFACE.$VLAN" "$IP" 2>/dev/null || sudo nmap -sS -Pn --top-ports 50 -T2 -e "$IFACE.$VLAN" "$IP" 2>/dev/null
         done
 
         echo "[!] Removendo VLAN $VLAN"
